@@ -11,7 +11,7 @@ from datetime import datetime
 
 BAUD = 38400
 # this is the port on the Raspberry Pi; it will be different for serial ports on other systems.
-PORT = "/dev/ttyS0"
+PORT = "/dev/ttyAMA0"
 
 TIMEOUT = 0.5    # I needed a longer timeout than ladyada's 0.2 value
 SERIALNUM = 0    # start with 0, each camera should have a unique ID.

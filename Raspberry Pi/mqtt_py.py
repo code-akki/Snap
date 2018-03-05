@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
-import time
+import RPi.GPIO as GPIO
+import time import sleep
 import json
 import cameramodulePi
 import pyrebase
@@ -18,6 +19,24 @@ config ={
 firebase = pyrebase.initialize_app(config)
 db= firebase.database()
 
+#configuring the pins for Button and servomotor
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(3, GPIO.OUT)
+pwm=GPIO.PWM(3,50)
+pwm.start(0)
+
+
+class status:
+    locked=True
+
+
+def SetAngle(angle):
+    duty = angle/18 + 2
+    GPIO.output(3,True)
+    pwm.ChangeDutyCycle(duty)
+    sleep(1)
+    GPIO.output(3,False)
+    pwm.ChangeDutyCycle(0)
 
 #/snap/home/door1/status payload {locked: boolean, userId: userid, method: nfc/android/remote} sub pub
 #/snap/home/door1/auth {guesid:guestid, auth: boolean} sub
@@ -42,9 +61,17 @@ def on_message(client, userdata,  message):
         data_dict = json.loads([payload)
         if data_dict['auth'] == True:
             #unlock the door
+            if status.locked == True:
+            SetAngle(180)
+            status.locked = False
+            print status.locked
+            auto_lock()
+                      
             #send the opened locked status
             data_json = json.dumps({'locked': False, 'userId': guesId, 'method': 'remote'})
             client.publish("snap/home/door1/status",str(data_json))
+        else:
+            print"Door Already Unlocked" 
     
     elif topic is "snap/home/door1/user":
         file_user=open("assets/users.txt","a+")
@@ -64,9 +91,11 @@ def on_disconnect(client, userdata, rc=0):
 
 def auto_lock():
     countdown= 5
-    while countdown>5:
+    while countdown>0:
         countdown-=1
         if countdown==0:
+            SetAngle(0)
+            status.locked = True                   
             dummy={'locked': True}
             db.child("status").set(dummy)
             data_json = json.dumps({'locked': True, 'userId': 'null', 'method': 'null'})

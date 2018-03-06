@@ -18,8 +18,12 @@ app.config['MQTT_REFRESH_TIME'] = 1.0  # refresh time in seconds
 app.config['MQTT_KEEPALIVE'] = 5
 app.config['MQTT_TLS_ENABLED'] = False
 app.config['MQTT_LAST_WILL_TOPIC'] = 'home/lastwill'
-app.config['MQTT_LAST_WILL_MESSAGE'] = 'disconnect'
+app.config['MQTT_LAST_WILL_MESSAGE'] = 'disconnected'
 app.config['MQTT_LAST_WILL_QOS'] = 2
+# # Parameters for ssl encryption
+# app.config['MQTT_BROKER_PORT']=8883
+# app.config['MQTT_TLS_ENABLED']=True
+# app.config['MQTT_TLS_CA_CERTS ']='/assets/ca.crt'
 mqtt = Mqtt(app)
 socketio = SocketIO(app)
 
@@ -37,8 +41,7 @@ db = firebase.database()
 
 @mqtt.on_connect()
 def handle_connect():
-    data = {'topic':'snap/home/door1/status', 'payload':'locked', 'qos': '2'}
-    socketio.emit('subscribe',data=data)
+    socketio.emit('subscribe')
 
 @socketio.on('publish')
 def handle_publish(json_str):
@@ -46,9 +49,11 @@ def handle_publish(json_str):
     mqtt.publish(data['topic'],data['message'],data['qos'])
 
 @socketio.on('subscribe')
-def handle_subscribe(json_str):
-    data=json.loads(json_str)
-    mqtt.subscribe(data['topic'],data['qos'])
+def handle_subscribe():
+    mqtt.subscribe("snap/home/door1/image")
+    mqtt.subscribe("snap/home/door1/android")
+    mqtt.subscribe("snap/home/door1/status")
+    mqtt.subscribe("snap/home/door1/")
 
 @mqtt.on_message()
 def handle_mqtt_message(client,userdata,message):
@@ -60,70 +65,41 @@ def handle_mqtt_message(client,userdata,message):
     topic = data['topic']
     payload = data['payload']
     if topic is "snap/home/door1/images":
-        # First store the image in filesystem and upload it to 
-        saveAndUpload(payload)
-    
-    elif topic is "snap/home/door1/who":
-        if "NFC" in  payload:
-            # send the user id as in payload who used NFC
-            sendNotification(payload,3)
-        else:
-            # normal entry
-            sendNotification(payload,2)
+        # Send the notification with Image src
+        sendNotification(payload ,1)
     
     elif topic is "snap/home/door1/user/android":
         # 1st time configuration
-        # send the data to the device
+        # send the key to the device and android
         random_key = random.getrandbits(128)
         # send the userId to device
-        data_publish = {'topic': 'snap/home/door1/user','message': payload,'qos':2}
+        data_publish = json.dumps({'topic': 'snap/home/door1/user','message': payload,'qos':'2'})
         socketio.emit("publish",data=data_publish)
         # publish the random generated key to MQTT
-        data_publish = {'topic': 'snap/home/door1/key','message': str(random_key),'qos':2}
+        data_publish = json.dumps({'topic': 'snap/home/door1/key','message': str(random_key),'qos':'2'})
         socketio.emit("publish",data=data_publish)
     
     elif topic is "snap/home/door1/status":
         #store the locked value in fireabse to show on android
-        dummy={'locked':payload=='True'}
+        data_dict = json.loads(payload)
+        dummy={'locked':data_dict['locked']=='True'}
         db.child("status").set(dummy)
-        # autolock- to be implemented on device end
-        # while(countdown>0 and payload=='False'):
-        #     countdown-=1
-        #     if(countdown==0):
-        #         dummy={'locked':True}
-        #         db.child("status")
-        #         socketio.emit("publish",data={'topic':"snap/home/door1/status",
-        #                                 'message':'True',
-        #                                 'qos':'2'})
+        if data_dict['locked']==False:
+            dummy={'time_in':datetime.datetime.now().time()}
+            db.child("logs").child(data_dict['userId']).set(dummy)
+            if data_dict['method']=='nfc':
+                # send the user id as in payload who used NFC
+                sendNotification(payload,3)
+            else:
+                # normal entry
+                sendNotification(payload,2)
+
     elif topic is "snap/home/door1/auth":
         arr = payload.split("_")
         if arr[1]=='True':
             db_data = {'time_in':datetime.datetime.now().time(), "time_out":""}
             db.child("logs").child(arr[0]).set(db_data)
             db.child("guests").child(arr[0])
-        
-# saves file to local filesystem and uploads to Cloud Storage
-def saveAndUpload(imageBase64):
-    rand_guestId = str(random.getrandbits(64))
-    data = base64.b64decode(imageBase64)
-    filename = "D://Image_data//{}.jpg".format(rand_guestId)
-    fout = open(filename,"wb")
-    data.decode('utf-8')
-    fout.write(data)
-    fout.close()
-    storage = firebase.storage()
-    storageRefName = "visitors/{}.jpg".format(rand_guestId)
-    storage.child(storageRefName).put(filename)
-    # Send the notification with Image src
-    sendNotification(storageRefName ,1)
-    socketio.emit("publish",data = {'topic': 'snap/home/door1/auth',
-                                    'message': rand_guestId+'_False',
-                                    'qos': '2'})
-    # Logic on device end:
-    # topic = snap/hom/door1/auth
-    # arr = payload.split('_')
-    # if guestId==arr[0]and 'True'==arr[1]:
-    #     unlock
     
 
 def sendNotification(some_id,case):
@@ -171,3 +147,7 @@ def sendNotification(some_id,case):
     print(result)
 
 # add logic to trust the android client
+
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)

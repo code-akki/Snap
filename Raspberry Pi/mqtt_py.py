@@ -22,6 +22,7 @@ db= firebase.database()
 #configuring the pins for Button and servomotor
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(3, GPIO.OUT)
+GPIO.setup(23,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 pwm=GPIO.PWM(3,50)
 pwm.start(0)
 
@@ -117,8 +118,9 @@ client.subscribe("snap/home/door1/key")
 client.loop_forever()
 
 while True:
-    #somebody pressed the doorbell
-    #cameramodulePi.shoothi()
+    button_state = GPIO.input(23)
+    if button_state == False:
+        cameramodulePi.shoothi()
     #take image from the filesystem and store it in cloud
     rand_guestid = str(random.getrandbits(64))
     storage=firebase.storage()

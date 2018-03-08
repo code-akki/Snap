@@ -9,6 +9,12 @@ import serial
 import array
 from datetime import datetime
 
+import RPi.GPIO as GPIO
+from time import sleep
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(23,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+
+
 BAUD = 38400
 # this is the port on the Raspberry Pi; it will be different for serial ports on other systems.
 PORT = "/dev/ttyAMA0"
@@ -279,4 +285,7 @@ def shoothi():
 if __name__ =="__main__":
 	s = serial.Serial( PORT, baudrate=BAUD, timeout = TIMEOUT )
 	#shootlo()
-	shoothi()
+	while True:
+                button_state = GPIO.input(23)
+                if button_state == False:
+                        shoothi()

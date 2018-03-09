@@ -8,13 +8,26 @@
 import serial 
 import array
 from datetime import datetime
+import paho.mqtt.client as mqtt
+import pyrebase
+import random
 
 import RPi.GPIO as GPIO
 from time import sleep
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(23,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
-
+broker_address='172.16.73.39'
+port=8883
+config ={
+    "apiKey": "AIzaSyDpXXiXKrHB4EX0WtrrLGVaCxiJInEHToE",
+    "authDomain":"snap-8a7b3.firebaseapp.com",
+    "databaseURL": "https://snap-8a7b3.firebaseio.com",
+    "projectId": "snap-8a7b3",
+    "storageBucket":"snap-8a7b3.appspot.com"
+}
+firebase = pyrebase.initialize_app(config)
+db= firebase.database()
 BAUD = 38400
 # this is the port on the Raspberry Pi; it will be different for serial ports on other systems.
 PORT = "/dev/ttyAMA0"
@@ -51,6 +64,14 @@ getbufflencommand = [COMMANDSEND, SERIALNUM, CMD_GETBUFFLEN, 0x01, FBUF_CURRENTF
 
 s = serial.Serial( PORT, baudrate=BAUD, timeout = TIMEOUT )
 
+def on_connect(client,userdata,flags,rc):
+        print('CameraModule connected.')
+
+def on_publish(client,userdata,flags,rc):
+        print('sent reference id.')
+
+def on_disconnect(client, userdata, rc=0):
+        client.loop_stop()
 
 def checkreply(r, b):
 	r = list(r)
@@ -238,7 +259,7 @@ def shootlo():
 	f.close()
 	return fullpath
 
-def shoothi():
+def shoothi(pathname):
 
 #reset()
 
@@ -264,13 +285,13 @@ def shoothi():
 #bts = array.array('B', bytes_to_read).tostring()
 	photo = readbuffer( bytes_to_read )
 
-	foldername = "hires"
+	foldername = "images"
 
 	filename = "photo_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".jpg"
 
 	fullpath = foldername+"/"+filename
-	#f = open(fullpath, 'wb' )
-	f = open("test.jpg","wb")
+	f = open(pathname, 'wb' )
+	#f = open("test.jpg","wb")
 	
 
 #photodata = ''.join( photo )
@@ -284,8 +305,21 @@ def shoothi():
 
 if __name__ =="__main__":
 	s = serial.Serial( PORT, baudrate=BAUD, timeout = TIMEOUT )
+	client=mqtt.Client('CameraMqtt')
+	client.tls_set("/home/pi/Desktop/Snap/assets/ca.crt")
+	client.on_connect=on_connect
+	client.on_publish=on_publish
+	client.on_disconnect=on_disconnect
+	client.connect(broker_address,port)
+	client.loop_forever()
 	#shootlo()
 	while True:
-                button_state = GPIO.input(23)
-                if button_state == False:
-                        shoothi()
+                button_state=GPIO.input(23)
+                if button_state ==False:
+                        print('button pressed.')
+                        rand_guestid=str(random.getrandbits(64))
+                        shoothi('images/{}.jpg'.format(rand_guestid))
+                        storage=firebase.storage()
+                        storageRef='visitors/{}.jpg'.format(rand_guestid)
+                        storage.child(storageRef).put('images/{}.jpg'.format(rand_guestid))
+                        client.publish('snap/home/door1/image',storageRef)

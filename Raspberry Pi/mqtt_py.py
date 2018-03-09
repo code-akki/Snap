@@ -1,18 +1,25 @@
 import paho.mqtt.client as mqtt
 import RPi.GPIO as GPIO
-import time import sleep
+import time 
+import sleep
 import json
 import cameramodulePi
 import pyrebase
 import os
 
+#/snap/home/door1/status payload {locked: boolean, userId: userid, method: nfc/android/remote} sub pub
+#/snap/home/door1/auth {guestid:guestid, auth: boolean} sub
+#/snap/home/door1/user sub
+#/snap/hoome/door1/key sub
+#snap/home/door1/image pub
+
 broker_address="172.16.73.39"
 port=8883
 config ={
-    "apiKey": "",
-    "authDomain":"",
-    "databaseURL": "",
-    "projectId": "snap-*a7b3",
+    "apiKey": "AIzaSyDpXXiXKrHB4EX0WtrrLGVaCxiJInEHToE",
+    "authDomain":"snap-8a7b3.firebaseapp.com",
+    "databaseURL": "https://snap-8a7b3.firebaseio.com",
+    "projectId": "snap-8a7b3",
     "storageBucket":"snap-8a7b3.appspot.com"
 }
 
@@ -38,12 +45,6 @@ def SetAngle(angle):
     GPIO.output(3,False)
     pwm.ChangeDutyCycle(0)
 
-#/snap/home/door1/status payload {locked: boolean, userId: userid, method: nfc/android/remote} sub pub
-#/snap/home/door1/auth {guesid:guestid, auth: boolean} sub
-#/snap/home/door1/user sub
-#/snap/hoome/door1/key sub
-#snap/home/door1/image pub
-
 def on_connect(client, userdata, flags, rc):
     print "Connected"
 
@@ -62,27 +63,28 @@ def on_message(client, userdata,  message):
         if data_dict['auth'] == True:
             #unlock the door
             if status.locked == True:
-            SetAngle(180)
-            status.locked = False
-            print status.locked
-            auto_lock()
+                SetAngle(180)
+                status.locked = False
+                print status.locked
+                auto_lock()
                       
-            #send the opened locked status
-            data_json = json.dumps({'locked': False, 'userId': guesId, 'method': 'remote'})
-            client.publish("snap/home/door1/status",str(data_json))
-        else:
-            print"Door Already Unlocked" 
+                #send the opened locked status
+                data_json = json.dumps({'locked': False, 'userId': guesId, 'method': 'remote'})
+                client.publish("snap/home/door1/status",str(data_json))
+            else:
+                pass
     
     elif topic is "snap/home/door1/user":
         file_user=open("assets/users.txt","a+")
-        if payload in file_user:
-            break
+        f.seek(0)
+        if payload in file_user.read():
+            pass
         else:
            file_user.write("\n"+payload)
 
     elif topic is "snap/home/door1/key":
         #store the key
-        file_key = open("assets/key.txt","w")
+        file_key = open("assets/key.txt","w+")
         file_key.write(payload)
 
     
@@ -123,7 +125,7 @@ while True:
     rand_guestid = str(random.getrandbits(64))
     storage=firebase.storage()
     storageRef="visitors/{}.jpg".format(rand_guestid)
-    storage.child(storageRef).put("images/{}").format(rand_guestid)
+    storage.child(storageRef).put("images/{}.jpg").format(rand_guestid)
     client.publish("snap/home/door1/image",storageRef)
     
     

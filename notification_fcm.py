@@ -11,7 +11,7 @@ import datetime
 
 app = Flask(__name__)
 app.config['MQTT_BROKER']="172.16.73.4"
-app.config['MQTT_BROKER_PORT'] = 1883
+#app.config['MQTT_BROKER_PORT'] = 1883
 app.config['MQTT_USERNAME']='snap_lock'
 app.config['MQTT_PASSWORD']='Sn@pCDI'
 app.config['MQTT_REFRESH_TIME'] = 1.0  # refresh time in seconds
@@ -20,10 +20,10 @@ app.config['MQTT_TLS_ENABLED'] = False
 app.config['MQTT_LAST_WILL_TOPIC'] = 'home/lastwill'
 app.config['MQTT_LAST_WILL_MESSAGE'] = 'disconnected'
 app.config['MQTT_LAST_WILL_QOS'] = 2
-# # Parameters for ssl encryption
-# app.config['MQTT_BROKER_PORT']=8883
-# app.config['MQTT_TLS_ENABLED']=True
-# app.config['MQTT_TLS_CA_CERTS ']='/assets/ca.crt'
+# Parameters for ssl encryption
+app.config['MQTT_BROKER_PORT']=8883
+app.config['MQTT_TLS_ENABLED']=True
+app.config['MQTT_TLS_CA_CERTS ']='/assets/ca.crt'
 mqtt = Mqtt(app)
 socketio = SocketIO(app)
 
@@ -53,7 +53,7 @@ def handle_subscribe():
     mqtt.subscribe("snap/home/door1/image")
     mqtt.subscribe("snap/home/door1/android")
     mqtt.subscribe("snap/home/door1/status")
-    mqtt.subscribe("snap/home/door1/")
+    mqtt.subscribe("snap/home/door1/auth")
 
 @mqtt.on_message()
 def handle_mqtt_message(client,userdata,message):
@@ -66,7 +66,8 @@ def handle_mqtt_message(client,userdata,message):
     payload = data['payload']
     if topic is "snap/home/door1/images":
         # Send the notification with Image src
-        sendNotification(payload ,1)
+        #sendNotification(payload ,1)
+        pass
     
     elif topic is "snap/home/door1/user/android":
         # 1st time configuration
@@ -89,17 +90,19 @@ def handle_mqtt_message(client,userdata,message):
             db.child("logs").child(data_dict['userId']).set(dummy)
             if data_dict['method']=='nfc':
                 # send the user id as in payload who used NFC
-                sendNotification(payload,3)
+                #sendNotification(payload,3)
+                pass
             else:
                 # normal entry
-                sendNotification(payload,2)
+                #sendNotification(payload,2)
+                pass
 
     elif topic is "snap/home/door1/auth":
-        arr = payload.split("_")
-        if arr[1]=='True':
+        data_dict=json.loads(payload)
+        if data_dict['auth']=='True':
             db_data = {'time_in':datetime.datetime.now().time(), "time_out":""}
-            db.child("logs").child(arr[0]).set(db_data)
-            db.child("guests").child(arr[0])
+            db.child("logs").child(data_dict['guestid']).set(db_data)
+            db.child("guests").child(data_dict['guestid'])
     
 
 def sendNotification(some_id,case):

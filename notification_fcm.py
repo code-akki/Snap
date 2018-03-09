@@ -10,20 +10,20 @@ import random
 import datetime
 
 app = Flask(__name__)
-app.config['MQTT_BROKER']="172.16.73.4"
+app.config['MQTT_BROKER_URL']="172.16.73.39"
 #app.config['MQTT_BROKER_PORT'] = 1883
-app.config['MQTT_USERNAME']='snap_lock'
-app.config['MQTT_PASSWORD']='Sn@pCDI'
+# app.config['MQTT_USERNAME']='snap_lock'
+# app.config['MQTT_PASSWORD']='Sn@pCDI'
 app.config['MQTT_REFRESH_TIME'] = 1.0  # refresh time in seconds
 app.config['MQTT_KEEPALIVE'] = 5
-app.config['MQTT_TLS_ENABLED'] = False
+#app.config['MQTT_TLS_ENABLED'] = False
 app.config['MQTT_LAST_WILL_TOPIC'] = 'home/lastwill'
 app.config['MQTT_LAST_WILL_MESSAGE'] = 'disconnected'
 app.config['MQTT_LAST_WILL_QOS'] = 2
 # Parameters for ssl encryption
 app.config['MQTT_BROKER_PORT']=8883
 app.config['MQTT_TLS_ENABLED']=True
-app.config['MQTT_TLS_CA_CERTS ']='/assets/ca.crt'
+app.config['MQTT_TLS_CA_CERTS']='/Users/apple/Desktop/Akhil/assets/ca.crt'
 mqtt = Mqtt(app)
 socketio = SocketIO(app)
 
@@ -40,8 +40,9 @@ firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
 @mqtt.on_connect()
-def handle_connect():
+def handle_connect(client, userdata, flags, rc):
     socketio.emit('subscribe')
+    print("Connected")
 
 @socketio.on('publish')
 def handle_publish(json_str):
@@ -67,7 +68,7 @@ def handle_mqtt_message(client,userdata,message):
     if topic is "snap/home/door1/images":
         # Send the notification with Image src
         #sendNotification(payload ,1)
-        pass
+        print(payload)
     
     elif topic is "snap/home/door1/user/android":
         # 1st time configuration
@@ -90,11 +91,16 @@ def handle_mqtt_message(client,userdata,message):
             db.child("logs").child(data_dict['userId']).set(dummy)
             if data_dict['method']=='nfc':
                 # send the user id as in payload who used NFC
-                #sendNotification(payload,3)
+                #sendNotification(data_dict['userId'],3)
                 pass
-            else:
+            elif data_dict['method']=='android':
                 # normal entry
-                #sendNotification(payload,2)
+                #sendNotification(data_dict['userId'],2)
+                pass
+            elif data_dict['method']=='remote':
+                #remote entry
+                #send the notification with id who has granted access
+                #sendNotification(data_dict['userId'],4)
                 pass
 
     elif topic is "snap/home/door1/auth":
@@ -112,20 +118,22 @@ def sendNotification(some_id,case):
     # registration_ids = [] 
     registration_id = "d_Ir6wzFH90:APA91bGTmlb74dx40_L43Njr6tRQCn3z8B07RE7iItvF4e2zeLw7r-hZucMSvCob6HQWCMkwmcpM1yPlEJpNbvx2cPRRaVDj4S4x-c2HrqKvEiDaNqv6V0jPrIgilncceOvwgZ0UCjCK"  
     # Set the notification title and body
-    message_title = "Door Notification"
+    message_title = "Knock Knock"
     message_body1 = "Somebody is at your door."
     message_body2 = "User {} has opened the door.".format(some_id)
     message_body3 = "User {} has used the NFC tag.".format(some_id)
-    # Create a data message for the client to process data
-    data_message = {
-        "image_child": some_id
-    }
+    message_body4 = "User {} has opened the door for guest.".format(some_id)
+
     # Add priority
     extra_kwargs = {
         'priority' : 'high'
     }
 
     if case == 1:
+        # Create a data message for the client to process data
+        data_message = {
+            "image_child": some_id
+        }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body1,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
@@ -133,21 +141,40 @@ def sendNotification(some_id,case):
             message_title=message_title,message_body=message_body1,
             data_message=data_message,extra_kwargs=extra_kwargs)    
     elif case ==2:
+        # Create a data message for the client to process data
+        data_message = {
+            "userId": some_id
+        }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body2,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
         result = push_service.notify_single_device(registration_id=registration_id,
             message_title=message_title,message_body=message_body2,
             data_message=data_message,extra_kwargs=extra_kwargs)  
-    else:
+    elif case ==3:
+        # Create a data message for the client to process data
+        data_message = {
+            "userId": some_id
+        }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body3,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
         result = push_service.notify_single_device(registration_id=registration_id,
             message_title=message_title,message_body=message_body3,
-            data_message=data_message,extra_kwargs=extra_kwargs)  
+            data_message=data_message,extra_kwargs=extra_kwargs)
 
-    print(result)
+    elif case==4:
+        data_message = {
+            "userId": some_id
+        }
+        # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
+        #     message_title=message_title,message_body=message_body3,
+        #     data_message=data_message,extra_kwargs=extra_kwargs)
+        result = push_service.notify_single_device(registration_id=registration_id,
+            message_title=message_title,message_body=message_body4,
+            data_message=data_message,extra_kwargs=extra_kwargs)
+
+    #print(result)
 
 # add logic to trust the android client
 

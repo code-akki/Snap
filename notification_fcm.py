@@ -116,13 +116,7 @@ def sendNotification(some_id,case):
     push_service = FCMNotification(api_key="AAAARXD4tc8:APA91bF--czU1L658-tCk8E4sQaguamIFapxjiZ1pFqzjIPj6j5hG-_yE__DPXLgq_tt_oHmE0fonw1HzpTwy90QMsVv4-okWJqPHZHfsqAtvJFiV902AUm4yQt1bipcETlzL0YsjbWB")
     # Sending to multiple devices using registration ids
     # registration_ids = [] 
-    registration_id = "d_Ir6wzFH90:APA91bGTmlb74dx40_L43Njr6tRQCn3z8B07RE7iItvF4e2zeLw7r-hZucMSvCob6HQWCMkwmcpM1yPlEJpNbvx2cPRRaVDj4S4x-c2HrqKvEiDaNqv6V0jPrIgilncceOvwgZ0UCjCK"  
-    # Set the notification title and body
-    message_title = "Knock Knock"
-    message_body1 = "Somebody is at your door."
-    message_body2 = "User {} has opened the door.".format(some_id)
-    message_body3 = "User {} has used the NFC tag.".format(some_id)
-    message_body4 = "User {} has opened the door for guest.".format(some_id)
+    registration_id = "d_Ir6wzFH90:APA91bGTmlb74dx40_L43Njr6tRQCn3z8B07RE7iItvF4e2zeLw7r-hZucMSvCob6HQWCMkwmcpM1yPlEJpNbvx2cPRRaVDj4S4x-c2HrqKvEiDaNqv6V0jPrIgilncceOvwgZ0UCjCK"
 
     # Add priority
     extra_kwargs = {
@@ -132,46 +126,55 @@ def sendNotification(some_id,case):
     if case == 1:
         # Create a data message for the client to process data
         data_message = {
-            "image_child": some_id
+            "Id": some_id,
+            "message_title": "Knock Knock",
+            "message_body": "Somebody is at your door."
+            "time_stamp": str(datetime.datetime.now().time())
         }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body1,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
-        result = push_service.notify_single_device(registration_id=registration_id,
-            message_title=message_title,message_body=message_body1,
+        result = push_service.single_device_data_message(registration_id=registration_id,
             data_message=data_message,extra_kwargs=extra_kwargs)    
     elif case ==2:
         # Create a data message for the client to process data
         data_message = {
-            "userId": some_id
+            "Id": "",
+            "message_title": "Knock Knock",
+            "message_body" : "User {} has opened the door.".format(some_id)
+            "time_stamp": str(datetime.datetime.now().time())
         }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body2,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
-        result = push_service.notify_single_device(registration_id=registration_id,
-            message_title=message_title,message_body=message_body2,
+        result = push_service.single_device_data_message(registration_id=registration_id,
             data_message=data_message,extra_kwargs=extra_kwargs)  
     elif case ==3:
         # Create a data message for the client to process data
         data_message = {
-            "userId": some_id
+            "Id": "",
+            "message_title": "Knock Knock",
+            "message_body": "User {} has used the NFC tag.".format(some_id)
+            "time_stamp": str(datetime.datetime.now().time())
+                        
         }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body3,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
-        result = push_service.notify_single_device(registration_id=registration_id,
-            message_title=message_title,message_body=message_body3,
+        result = push_service.single_device_data_message(registration_id=registration_id,
             data_message=data_message,extra_kwargs=extra_kwargs)
 
     elif case==4:
         data_message = {
-            "userId": some_id
+            "Id": "",
+            "message_title": "Knock Knock",
+            "message_body":"User {} has opened the door for guest.".format(some_id)
+            "time_stamp": str(datetime.datetime.now().time())
         }
         # result = push_service.notify_multiple_devices(registration_ids=registration_ids,
         #     message_title=message_title,message_body=message_body3,
         #     data_message=data_message,extra_kwargs=extra_kwargs)
-        result = push_service.notify_single_device(registration_id=registration_id,
-            message_title=message_title,message_body=message_body4,
+        result = push_service.single_device_data_message(registration_id=registration_id,
             data_message=data_message,extra_kwargs=extra_kwargs)
 
     #print(result)

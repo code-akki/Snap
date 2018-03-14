@@ -28,7 +28,13 @@ dependencies {
     compile 'com.google.firebase:firebase-core:11.8.0'
     compile 'com.google.firebase:firebase-messaging:11.8.0'
     implementation 'me.aflak.libraries:fingerprint:2.5.2'
-    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
-    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+   // compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
+   // compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+    compile 'com.google.firebase:firebase-storage:11.8.0'
+    compile 'com.firebaseui:firebase-ui-storage:0.6.0'
+    compile 'com.google.firebase:firebase-database:11.8.0'
+    compile('org.eclipse.paho:org.eclipse.paho.android.service:1.0.2') {
+        exclude module: 'support-v4'
+    }
 }
 apply plugin: 'com.google.gms.google-services'

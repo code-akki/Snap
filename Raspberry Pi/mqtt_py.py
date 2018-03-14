@@ -49,15 +49,17 @@ def on_message(client, userdata,  message):
     payload = message.payload.decode("utf-8")
 
     if topic is "snap/home/door1/auth":
-        data_dict = json.loads([payload])
-        if data_dict['auth'] == True:
+        #data_dict = json.loads([payload])
+        auth_arr=payload.split('_')
+        if auth_arr[0] == 'True':
             #unlock the door
             if status.locked == True:
                 SetAngle(180)
                 status.locked = False
                 #send the opened locked status
-                data_json = json.dumps({'locked': False, 'userId': guesId, 'method': 'remote'})
-                client.publish("snap/home/door1/status",str(data_json))
+                # data_json = json.dumps({'locked': False, 'userId': guesId, 'method': 'remote'})
+                pub_payload='False_'+auth_arr[2]+'_remote'
+                client.publish("snap/home/door1/status",pub_payload)
                 print(str(status.locked))
                 auto_lock()
             else:
@@ -89,7 +91,8 @@ def auto_lock():
             status.locked = True                   
             #dummy={'locked': True}
             #db.child("status").set(dummy)
-            data_json = json.dumps({'locked': True, 'userId': 'null', 'method': 'null'})
+            #data_json = json.dumps({'locked': True, 'userId': 'null', 'method': 'null'})
+            pub_payload='True_'
             client.publish("snap/home/door1/status",str(data_json))
 
 if __name__=='__main__':

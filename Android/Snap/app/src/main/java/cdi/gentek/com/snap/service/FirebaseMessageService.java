@@ -60,14 +60,14 @@ public class FirebaseMessageService  extends FirebaseMessagingService {
         Log.e(TAG, "push json: " + json.toString());
 
         try {
-            JSONObject data = json.getJSONObject("data");
+            //JSONObject data = json.getJSONObject("data");
 
-            String title = data.getString("title");
-            String message = data.getString("message_body");
+            String title = json.getString("message_title");
+            String message = json.getString("message_body");
 //            boolean isBackground = data.getBoolean("is_background");
 //            String imageUrl = data.getString("image");
-            String timestamp = data.getString("timestamp");
-            String id= data.getString("id");
+            String timestamp = json.getString("time_stamp");
+            String id= json.getString("Id");
 //            JSONObject payload = data.getJSONObject("payload");
 
             Log.e(TAG, "title: " + title);

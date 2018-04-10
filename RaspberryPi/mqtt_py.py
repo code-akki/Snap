@@ -63,7 +63,7 @@ def on_message(client, userdata,  message):
                 #send the opened locked status
                 #data_json = json.dumps({'locked': False, 'userId': guesId, 'method': 'remote'})
                 #client.publish("snap/home/door1/status","False_"+auth_arr[2]+"_remote")
-                r=requests.get('http://172.16.226.31:5000/status?lock=False_'+auth_arr[1]+'_remote')
+                r=requests.get('http://172.16.226.31:5000/status?lock=False_'+auth_arr[2]+'_remote')
                 print(str(status.locked))
                 auto_lock()
             else:
